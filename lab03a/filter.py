@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[180]:
+# In[23]:
 
 
 spark.stop
@@ -22,59 +22,50 @@ sys.path.insert(0, os.path.join(spark_home, 'python'))
 sys.path.insert(0, os.path.join(spark_home, 'python/lib/py4j-0.10.7-src.zip'))
 
 
-# In[3]:
+# In[2]:
 
 
 from pyspark.sql import SparkSession
 
 spark = SparkSession.builder.appName("olpg").getOrCreate()
-spark.conf.set('spark.filter.topic_name','lab03_input_data')
-spark.conf.set('spark.filter.offset','earliest')
-spark.conf.set('spark.filter.output_dir_prefix','visits')
+
+# spark.conf.set('spark.filter.topic_name','lab03_input_data')
+# spark.conf.set('spark.filter.offset','earliest')
+# spark.conf.set('spark.filter.output_dir_prefix','visits')
 
 sc = spark.sparkContext
 
 spark
 
 
-# In[ ]:
+# In[8]:
 
 
-def kill_all():
-    streams = SparkSession.builder.getOrCreate().streams.active
-    if streams:
-        for s in streams:
-            desc = s.lastProgress["sources"][0]["description"]
-            s.stop()
-            print("Stopped {s}".format(s=desc))
+topic = spark.conf.get("spark.filter.topic_name",'lab03_input_data')
+offset = spark.conf.get("spark.filter.offset",'earliest')
+outputDir = spark.conf.get("spark.filter.output_dir_prefix",'visits')
 
 
-# In[ ]:
+# In[9]:
 
 
-kill_all()
+event = spark.read     .option("kafka.bootstrap.servers", 'spark-master-1:6667')     .option("subscribe", topic)     .option("startingOffsets", offset)     .format("kafka")    .load() 
 
 
-# In[4]:
-
-
-event = spark.read     .option("kafka.bootstrap.servers", 'spark-master-1:6667')     .option("subscribe", 'lab03_input_data')     .option("startingOffsets", """earliest""")     .format("kafka")     .load() 
-
-
-# In[5]:
+# In[10]:
 
 
 event.printSchema()
 event.show(5)
 
 
-# In[6]:
+# In[11]:
 
 
 from pyspark.sql.functions import *
 
 
-# In[7]:
+# In[12]:
 
 
 json_doc = event.select(col("value").cast("string"))
@@ -82,31 +73,31 @@ json_doc = event.select(col("value").cast("string"))
 json_doc.show(10,False)
 
 
-# In[8]:
+# In[13]:
 
 
 from pyspark.sql.types import *
 
 
-# In[9]:
+# In[14]:
 
 
 schema = 'array<struct<event_type:STRING,category:STRING,item_id:STRING,item_price:INTEGER,uid:STRING,timestamp:STRING>>'
 
 
-# In[10]:
+# In[15]:
 
 
 data = json_doc.withColumn('data', explode(from_json('value', schema)))                .select(*json_doc.columns, 'data.*')
 
 
-# In[11]:
+# In[16]:
 
 
 data = data.select("event_type","category","item_id","item_price","uid","timestamp")
 
 
-# In[12]:
+# In[17]:
 
 
 from pyspark.sql.types import StringType
@@ -116,7 +107,7 @@ udf1 = udf(lambda x: x[:-3],StringType())
 data = data.withColumn('date',udf1('timestamp'))
 
 
-# In[13]:
+# In[18]:
 
 
 import pyspark.sql.functions as f
@@ -124,68 +115,74 @@ import pyspark.sql.functions as f
 data = data.withColumn("date", f.from_unixtime("date", "yyyyMMdd"))
 
 
-# In[14]:
+# In[19]:
 
 
 data = data.withColumn("p_date",col("date"))
 
 
-# In[15]:
+# In[20]:
 
 
 data = data.select(col("event_type"), col("category"),                   col("item_id"), col("item_price"),                   col("uid"),col("timestamp"),
                    col("date").cast("string"), col("p_date"))
 
 
-# In[16]:
+# In[21]:
 
 
 data.show(2)
 
 
-# In[155]:
+# In[22]:
 
 
 dat_buy = data.where(f.col("event_type").like('buy'))
 
 
-# In[167]:
+# In[23]:
 
 
 db = dat_buy.repartitionByRange("p_date")
 
 
-# In[168]:
+# In[24]:
 
 
 print(db.rdd.getNumPartitions())
 
 
-# In[156]:
+# In[25]:
 
 
 dat_view = data.where(f.col("event_type").like('view'))
 
 
-# In[169]:
+# In[26]:
 
 
 dv = dat_view.repartitionByRange("p_date")
 
 
-# In[170]:
+# In[27]:
 
 
 print(dv.rdd.getNumPartitions())
 
 
-# In[171]:
+# In[28]:
+
+
+outputDir = spark.conf.get("spark.filter.output_dir_prefix",'visits')
+
+
+# In[29]:
 
 
 db.write.save('/user/olga.pogodina/visits/buy', format='json')
 
 
-# In[176]:
+# In[30]:
 
 
 dv.write.save('/user/olga.pogodina/visits/view', format='json')
