@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[ ]:
+# In[180]:
 
 
 spark.stop
@@ -22,12 +22,16 @@ sys.path.insert(0, os.path.join(spark_home, 'python'))
 sys.path.insert(0, os.path.join(spark_home, 'python/lib/py4j-0.10.7-src.zip'))
 
 
-# In[2]:
+# In[3]:
 
 
 from pyspark.sql import SparkSession
 
 spark = SparkSession.builder.appName("olpg").getOrCreate()
+spark.conf.set('spark.filter.topic_name','lab03_input_data')
+spark.conf.set('spark.filter.offset','earliest')
+spark.conf.set('spark.filter.output_dir_prefix','visits')
+
 sc = spark.sparkContext
 
 spark
@@ -51,26 +55,26 @@ def kill_all():
 kill_all()
 
 
-# In[3]:
+# In[4]:
 
 
 event = spark.read     .option("kafka.bootstrap.servers", 'spark-master-1:6667')     .option("subscribe", 'lab03_input_data')     .option("startingOffsets", """earliest""")     .format("kafka")     .load() 
 
 
-# In[4]:
+# In[5]:
 
 
 event.printSchema()
 event.show(5)
 
 
-# In[5]:
+# In[6]:
 
 
 from pyspark.sql.functions import *
 
 
-# In[25]:
+# In[7]:
 
 
 json_doc = event.select(col("value").cast("string"))
@@ -78,31 +82,31 @@ json_doc = event.select(col("value").cast("string"))
 json_doc.show(10,False)
 
 
-# In[26]:
+# In[8]:
 
 
 from pyspark.sql.types import *
 
 
-# In[147]:
+# In[9]:
 
 
 schema = 'array<struct<event_type:STRING,category:STRING,item_id:STRING,item_price:INTEGER,uid:STRING,timestamp:STRING>>'
 
 
-# In[148]:
+# In[10]:
 
 
 data = json_doc.withColumn('data', explode(from_json('value', schema)))                .select(*json_doc.columns, 'data.*')
 
 
-# In[149]:
+# In[11]:
 
 
 data = data.select("event_type","category","item_id","item_price","uid","timestamp")
 
 
-# In[150]:
+# In[12]:
 
 
 from pyspark.sql.types import StringType
@@ -112,7 +116,7 @@ udf1 = udf(lambda x: x[:-3],StringType())
 data = data.withColumn('date',udf1('timestamp'))
 
 
-# In[151]:
+# In[13]:
 
 
 import pyspark.sql.functions as f
@@ -120,20 +124,20 @@ import pyspark.sql.functions as f
 data = data.withColumn("date", f.from_unixtime("date", "yyyyMMdd"))
 
 
-# In[152]:
+# In[14]:
 
 
 data = data.withColumn("p_date",col("date"))
 
 
-# In[153]:
+# In[15]:
 
 
 data = data.select(col("event_type"), col("category"),                   col("item_id"), col("item_price"),                   col("uid"),col("timestamp"),
                    col("date").cast("string"), col("p_date"))
 
 
-# In[154]:
+# In[16]:
 
 
 data.show(2)
@@ -181,7 +185,7 @@ print(dv.rdd.getNumPartitions())
 db.write.save('/user/olga.pogodina/visits/buy', format='json')
 
 
-# In[ ]:
+# In[176]:
 
 
 dv.write.save('/user/olga.pogodina/visits/view', format='json')
