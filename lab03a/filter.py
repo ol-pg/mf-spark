@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[23]:
+# In[40]:
 
 
 spark.stop
@@ -29,43 +29,43 @@ from pyspark.sql import SparkSession
 
 spark = SparkSession.builder.appName("olpg").getOrCreate()
 
-# spark.conf.set('spark.filter.topic_name','lab03_input_data')
-# spark.conf.set('spark.filter.offset','earliest')
-# spark.conf.set('spark.filter.output_dir_prefix','visits')
+spark.conf.set('spark.filter.topic_name','lab03_input_data')
+spark.conf.set('spark.filter.offset','earliest')
+spark.conf.set('spark.filter.output_dir_prefix','visits')
 
 sc = spark.sparkContext
 
 spark
 
 
-# In[8]:
+# In[3]:
 
 
-topic = spark.conf.get("spark.filter.topic_name",'lab03_input_data')
-offset = spark.conf.get("spark.filter.offset",'earliest')
-outputDir = spark.conf.get("spark.filter.output_dir_prefix",'visits')
+topic = spark.conf.get("spark.filter.topic_name")
+offset = spark.conf.get("spark.filter.offset")
+outputDir = spark.conf.get("spark.filter.output_dir_prefix")
 
 
-# In[9]:
+# In[4]:
 
 
 event = spark.read     .option("kafka.bootstrap.servers", 'spark-master-1:6667')     .option("subscribe", topic)     .option("startingOffsets", offset)     .format("kafka")    .load() 
 
 
-# In[10]:
+# In[5]:
 
 
 event.printSchema()
 event.show(5)
 
 
-# In[11]:
+# In[6]:
 
 
 from pyspark.sql.functions import *
 
 
-# In[12]:
+# In[7]:
 
 
 json_doc = event.select(col("value").cast("string"))
@@ -73,31 +73,31 @@ json_doc = event.select(col("value").cast("string"))
 json_doc.show(10,False)
 
 
-# In[13]:
+# In[8]:
 
 
 from pyspark.sql.types import *
 
 
-# In[14]:
+# In[9]:
 
 
 schema = 'array<struct<event_type:STRING,category:STRING,item_id:STRING,item_price:INTEGER,uid:STRING,timestamp:STRING>>'
 
 
-# In[15]:
+# In[10]:
 
 
 data = json_doc.withColumn('data', explode(from_json('value', schema)))                .select(*json_doc.columns, 'data.*')
 
 
-# In[16]:
+# In[11]:
 
 
 data = data.select("event_type","category","item_id","item_price","uid","timestamp")
 
 
-# In[17]:
+# In[12]:
 
 
 from pyspark.sql.types import StringType
@@ -107,7 +107,7 @@ udf1 = udf(lambda x: x[:-3],StringType())
 data = data.withColumn('date',udf1('timestamp'))
 
 
-# In[18]:
+# In[13]:
 
 
 import pyspark.sql.functions as f
@@ -115,56 +115,56 @@ import pyspark.sql.functions as f
 data = data.withColumn("date", f.from_unixtime("date", "yyyyMMdd"))
 
 
-# In[19]:
+# In[14]:
 
 
 data = data.withColumn("p_date",col("date"))
 
 
-# In[20]:
+# In[15]:
 
 
 data = data.select(col("event_type"), col("category"),                   col("item_id"), col("item_price"),                   col("uid"),col("timestamp"),
                    col("date").cast("string"), col("p_date"))
 
 
-# In[21]:
+# In[16]:
 
 
 data.show(2)
 
 
-# In[22]:
+# In[17]:
 
 
 dat_buy = data.where(f.col("event_type").like('buy'))
 
 
-# In[23]:
+# In[18]:
 
 
 db = dat_buy.repartitionByRange("p_date")
 
 
-# In[24]:
+# In[19]:
 
 
 print(db.rdd.getNumPartitions())
 
 
-# In[25]:
+# In[20]:
 
 
 dat_view = data.where(f.col("event_type").like('view'))
 
 
-# In[26]:
+# In[21]:
 
 
 dv = dat_view.repartitionByRange("p_date")
 
 
-# In[27]:
+# In[22]:
 
 
 print(dv.rdd.getNumPartitions())
