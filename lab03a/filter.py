@@ -9,16 +9,16 @@
 # In[1]:
 
 
-import os
-import sys
-os.environ["PYSPARK_PYTHON"]='/opt/anaconda/envs/bd9/bin/python'
-os.environ["SPARK_HOME"]='/usr/hdp/current/spark2-client'
-os.environ["PYSPARK_SUBMIT_ARGS"]='--packages org.apache.spark:spark-sql-kafka-0-10_2.11:2.4.7,org.elasticsearch:elasticsearch-spark-20_2.11:7.7.0,org.postgresql:postgresql:42.2.12,com.datastax.spark:spark-cassandra-connector_2.11:2.4.3 --num-executors 3 pyspark-shell'
+# import os
+# import sys
+# os.environ["PYSPARK_PYTHON"]='/opt/anaconda/envs/bd9/bin/python'
+# os.environ["SPARK_HOME"]='/usr/hdp/current/spark2-client'
+# os.environ["PYSPARK_SUBMIT_ARGS"]='--packages org.apache.spark:spark-sql-kafka-0-10_2.11:2.4.7,org.elasticsearch:elasticsearch-spark-20_2.11:7.7.0,org.postgresql:postgresql:42.2.12,com.datastax.spark:spark-cassandra-connector_2.11:2.4.3 --num-executors 3 pyspark-shell'
 
-spark_home = os.environ.get('SPARK_HOME', None)
+# spark_home = os.environ.get('SPARK_HOME', None)
 
-sys.path.insert(0, os.path.join(spark_home, 'python'))
-sys.path.insert(0, os.path.join(spark_home, 'python/lib/py4j-0.10.7-src.zip'))
+# sys.path.insert(0, os.path.join(spark_home, 'python'))
+# sys.path.insert(0, os.path.join(spark_home, 'python/lib/py4j-0.10.7-src.zip'))
 
 
 # In[2]:
@@ -39,10 +39,6 @@ spark
 topic = spark.conf.get("spark.filter.topic_name")
 offset = spark.conf.get("spark.filter.offset")
 outputDir = spark.conf.get("spark.filter.output_dir_prefix")
-
-spark.conf.set('spark.filter.topic_name', topic)
-spark.conf.set('spark.filter.offset', offset)
-spark.conf.set('spark.filter.output_dir_prefix', outputDir)
 
 
 # In[4]:
