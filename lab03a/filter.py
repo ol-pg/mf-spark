@@ -41,11 +41,13 @@ topic = spark.conf.get("spark.filter.topic_name")
 offset = spark.conf.get("spark.filter.offset")
 outputDir = spark.conf.get("spark.filter.output_dir_prefix")
 
+startingOffset = offset if (offset == "earliest") else '{"'+ topic + '":...}'
+
 
 # In[4]:
 
 
-event = spark.read     .option("kafka.bootstrap.servers", 'spark-master-1:6667')     .option("subscribe", topic)     .option("startingOffsets", offset)     .format("kafka")    .load() 
+event = spark.read     .option("kafka.bootstrap.servers", 'spark-master-1:6667')     .option("subscribe", topic)     .option("startingOffsets", startingOffset)     .format("kafka")    .load() 
 
 
 # In[5]:
