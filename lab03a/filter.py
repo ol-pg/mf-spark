@@ -138,7 +138,7 @@ dat_buy = data.where(f.col("event_type").like('buy'))
 # In[18]:
 
 
-db = dat_buy.repartitionByRange("p_date")
+db = dat_buy.repartition("p_date")
 
 
 # In[19]:
@@ -156,7 +156,7 @@ dat_view = data.where(f.col("event_type").like('view'))
 # In[21]:
 
 
-dv = dat_view.repartitionByRange("p_date")
+dv = dat_view.repartition("p_date")
 
 
 # In[22]:
@@ -168,17 +168,17 @@ print(dv.rdd.getNumPartitions())
 # In[28]:
 
 
-outputDir = spark.conf.get("spark.filter.output_dir_prefix",'visits')
+# outputDir = spark.conf.get("spark.filter.output_dir_prefix",'visits')
 
 
 # In[29]:
 
 
-db.write.save(outputDir+'/buy', format='json')
+db.write.partitionBy('p_date').save(outputDir + '/buy', format='json')
 
 
 # In[30]:
 
 
-dv.write.save(outputDir+'/view', format='json')
+dv.write.partitionBy('p_date').save(outputDir + '/view', format='json')
 
