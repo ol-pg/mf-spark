@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[40]:
+# In[3]:
 
 
 spark.stop
@@ -28,10 +28,6 @@ sys.path.insert(0, os.path.join(spark_home, 'python/lib/py4j-0.10.7-src.zip'))
 from pyspark.sql import SparkSession
 
 spark = SparkSession.builder.appName("olpg").getOrCreate()
-
-spark.conf.set('spark.filter.topic_name','lab03_input_data')
-spark.conf.set('spark.filter.offset','earliest')
-spark.conf.set('spark.filter.output_dir_prefix','visits')
 
 sc = spark.sparkContext
 
