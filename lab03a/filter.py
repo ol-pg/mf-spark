@@ -41,6 +41,10 @@ topic = spark.conf.get("spark.filter.topic_name")
 offset = spark.conf.get("spark.filter.offset")
 outputDir = spark.conf.get("spark.filter.output_dir_prefix")
 
+spark.conf.set('spark.filter.topic_name', topic)
+spark.conf.set('spark.filter.offset', offset)
+spark.conf.set('spark.filter.output_dir_prefix', outputDir)
+
 
 # In[4]:
 
@@ -84,7 +88,7 @@ schema = 'array<struct<event_type:STRING,category:STRING,item_id:STRING,item_pri
 # In[10]:
 
 
-data = json_doc.withColumn('data', explode(from_json('value', schema)))                .select(*json_doc.columns, 'data.*')
+data = json_doc.withColumn('data', explode(from_json('value', schema)))                .select('data.*')
 
 
 # In[11]:
