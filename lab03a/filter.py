@@ -4,7 +4,6 @@
 # In[3]:
 
 
-spark.stop
 
 
 # In[1]:
