@@ -174,11 +174,11 @@ outputDir = spark.conf.get("spark.filter.output_dir_prefix",'visits')
 # In[29]:
 
 
-db.write.save('/user/olga.pogodina/visits/buy', format='json')
+db.write.save(outputDir+'/buy', format='json')
 
 
 # In[30]:
 
 
-dv.write.save('/user/olga.pogodina/visits/view', format='json')
+dv.write.save(outputDir+'/view', format='json')
 
