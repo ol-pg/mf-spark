@@ -41,7 +41,7 @@ topic = spark.conf.get("spark.filter.topic_name")
 offset = spark.conf.get("spark.filter.offset")
 outputDir = spark.conf.get("spark.filter.output_dir_prefix")
 
-startingOffset = offset if (offset == "earliest") else '{"'+ topic + '":...}'
+startingOffset = offset if (offset == "earliest") else '{"'+ topic + '":{"0":' + offset + '}}'
 
 
 # In[4]:
