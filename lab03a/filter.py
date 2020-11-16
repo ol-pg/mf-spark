@@ -36,7 +36,7 @@ spark
 # In[3]:
 
 
-spark.conf.set("spark.sql.session.timeZone", "Europe/London")
+spark.conf.set("spark.sql.session.timeZone", "UTC")
 topic = spark.conf.get("spark.filter.topic_name")
 offset = spark.conf.get("spark.filter.offset")
 outputDir = spark.conf.get("spark.filter.output_dir_prefix")
