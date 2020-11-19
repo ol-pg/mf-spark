@@ -47,7 +47,7 @@ spark.conf.set("spark.sql.session.timeZone", "Europe/London")
 # In[41]:
 
 
-raw_kafka = spark.readStream.format("kafka")      .option("kafka.bootstrap.servers", "spark-master-1:6667")      .option("subscribe", "olga_pogodina")      .option("startingOffsets", """earliest""")      .option("checkpointLocation", "lab4b/hdfs:///user/olga.pogodina/streamingCheckpoints")      .load()
+raw_kafka = spark.readStream.format("kafka")      .option("kafka.bootstrap.servers", "spark-master-1:6667")      .option("subscribe", "olga_pogodina")      .option("startingOffsets", """earliest""").load()
 
 
 # In[9]:
@@ -87,13 +87,11 @@ parsedSdf = raw_kafka.select(col("value").cast(StringType()).alias("json"))     
 # In[40]:
 
 
-stream_data = parsedSdf.withWatermark("timestamp", "2 hour")                      .groupBy(window(col("timestamp"), "1 hour", "1 hour").alias("window_tf"))                      .agg(sum(when(col("event_type") == lit("buy"), col("item_price"))).alias("revenue"),                           count(when(col("uid").isNotNull(), col("uid"))).alias("visitors"),                           count(when(col("event_type") == lit("buy"), col("event_type"))).alias("purchases"),                           avg(when(col("event_type") == lit("buy"), col("item_price"))).alias("aov"))                      .select(col("window_tf").getField("start").cast("long").alias("start_ts"),                              col("window_tf").getField("end").cast("long").alias("end_ts"),                              col("revenue"), col("visitors"),                              col("purchases"), col("aov"))
+stream_data = parsedSdf.withWatermark("timestamp", "1 hour")                      .groupBy(window(col("timestamp"), "1 hour", "5 seconds").alias("window_tf"))                      .agg(sum(when(col("event_type") == lit("buy"), col("item_price"))).alias("revenue"),                           count(when(col("uid").isNotNull(), col("uid"))).alias("visitors"),                           count(when(col("event_type") == lit("buy"), col("event_type"))).alias("purchases"),                           avg(when(col("event_type") == lit("buy"), col("item_price"))).alias("aov"))                      .select(col("window_tf").getField("start").cast("long").alias("start_ts"),                              col("window_tf").getField("end").cast("long").alias("end_ts"),                              col("revenue"), col("visitors"),                              col("purchases"), col("aov"))
 
 
 # In[ ]:
 
 
-kafkaOutput = stream_data.select(f.to_json(f.struct(f.col("*"))).alias("value"))                         .writeStream                         .format("kafka")                         .option("kafka.bootstrap.servers", '10.0.0.5:6667')                         .option("topic", 'olga_pogodina_lab03b_out')                         .outputMode("update")
-                         .option("checkpointLocation", 'hdfs:///user/olga.pogodina/streamingCheckpoints')
-                         .start()
+kafkaOutput = stream_data.select(f.to_json(f.struct(f.col("*"))).alias("value"))                         .writeStream                         .format("kafka")                         .option("kafka.bootstrap.servers", '10.0.0.5:6667')                         .option("topic", 'olga_pogodina_lab03b_out')                         .outputMode("update").start()
 
