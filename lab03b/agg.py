@@ -1,13 +1,13 @@
 
 # coding: utf-8
 
-# In[42]:
+# In[49]:
 
 
 # spark.stop()
 
 
-# In[1]:
+# In[50]:
 
 
 # import os
@@ -22,7 +22,7 @@
 # sys.path.insert(0, os.path.join(spark_home, 'python/lib/py4j-0.10.7-src.zip'))
 
 
-# In[2]:
+# In[51]:
 
 
 from pyspark.sql import SparkSession
@@ -38,32 +38,32 @@ sc = spark.sparkContext
 spark
 
 
-# In[3]:
+# In[52]:
 
 
 spark.conf.set("spark.sql.session.timeZone", "Europe/London")
 
 
-# In[41]:
+# In[53]:
 
 
 raw_kafka = spark.readStream.format("kafka")      .option("kafka.bootstrap.servers", "spark-master-1:6667")      .option("subscribe", "olga_pogodina")      .option("startingOffsets", """earliest""").load()
 
 
-# In[9]:
+# In[54]:
 
 
 from pyspark.sql.types import *
 from pyspark.sql.functions import *
 
 
-# In[17]:
+# In[55]:
 
 
 import pyspark.sql.functions as f
 
 
-# In[25]:
+# In[56]:
 
 
 schema = StructType(
@@ -78,20 +78,14 @@ schema = StructType(
     )
 
 
-# In[30]:
+# In[63]:
 
 
-parsedSdf = raw_kafka.select(col("value").cast(StringType()).alias("json"))                      .select(from_json(col("json"), schema).alias("data"))                      .select("data.*")                      .withColumn("timestamp", (col("timestamp") / 1000).cast("timestamp"))
-
-
-# In[40]:
-
-
-stream_data = parsedSdf.withWatermark("timestamp", "1 hour")                      .groupBy(window(col("timestamp"), "1 hour").alias("window_tf"))                      .agg(sum(when(col("event_type") == lit("buy"), col("item_price"))).alias("revenue"),                           count(when(col("uid").isNotNull(), col("uid"))).alias("visitors"),                           count(when(col("event_type") == lit("buy"), col("event_type"))).alias("purchases"),                           avg(when(col("event_type") == lit("buy"), col("item_price"))).alias("aov"))                      .select(col("window_tf").getField("start").cast("long").alias("start_ts"),                              col("window_tf").getField("end").cast("long").alias("end_ts"),                              col("revenue"), col("visitors"),                              col("purchases"), col("aov"))
+aggDF = raw_kafka.select(f.from_json(f.col("value").cast("string"), schema).alias("json"))            .select("json.*")            .withColumn("eventTime", f.from_unixtime(f.col("timestamp") / 1000))            .groupBy(f.window(f.col("eventTime"), "1 hour").alias("ts"))            .agg(f.sum(f.when(f.col("uid").isNotNull(), 1)).alias("visitors"),                 f.sum(f.when(f.col("event_type") == "buy", f.col("item_price"))).alias("revenue"),                 f.sum(f.when(f.col("event_type") == "buy", 1)).alias("purchases"))            .select(f.unix_timestamp(f.col("ts").getField("start")).alias("start_ts"),                    f.unix_timestamp(f.col("ts").getField("end")).alias("end_ts"),                    f.col("revenue"),                    f.col("visitors"),                    f.col("purchases"),                    (f.col("revenue") / f.col("purchases")).alias("aov"))
 
 
 # In[ ]:
 
 
-kafkaOutput = stream_data.select(f.to_json(f.struct(f.col("*"))).alias("value"))                         .writeStream                         .format("kafka")                         .option("kafka.bootstrap.servers", '10.0.0.5:6667')                         .option("topic", 'olga_pogodina_lab03b_out')                         .outputMode("update").start()
+kafkaOutput = aggDF.select(f.to_json(f.struct(f.col("*"))).alias("value"))            .writeStream            .format("kafka")            .option("kafka.bootstrap.servers", '10.0.0.5:6667')            .option("topic", 'olga_pogodina_lab03b_out')            .outputMode("update")            .trigger(Trigger.ProcessingTime("5 seconds"))            .start()
 
