@@ -51,15 +51,15 @@ isUpdate = update if (update == "1") else "0"
 # In[3]:
 
 
-#dfSparkBuy = spark.read.json( inputDir +'/buy')
-dfSparkBuy = spark.read.json('/user/olga.pogodina/visits/buy')
+dfSparkBuy = spark.read.json( inputDir +'/buy')
+#dfSparkBuy = spark.read.json('/user/olga.pogodina/visits/buy')
 
 
 # In[5]:
 
 
-#dfSparkView = spark.read.json(inputDir + '/view')
-dfSparkView = spark.read.json('/user/olga.pogodina/visits/view')
+dfSparkView = spark.read.json(inputDir + '/view')
+#dfSparkView = spark.read.json('/user/olga.pogodina/visits/view')
 
 
 # In[9]:
