@@ -125,7 +125,7 @@ if (isUpdate == 1):
 
 
     def columnsAll(myCols, allCols):
-        return map(lambda x: if in myCols else lit(0).alias(x),allCols)
+        return map(lambda x: col(x) if x in myCols else lit(0).alias(x),allCols)
 
     cols = columnsAll(oldCols, oldCols)
     updatedDf = lastLoadDf.select(cols).union(rowsNewOnly.select(cols))
