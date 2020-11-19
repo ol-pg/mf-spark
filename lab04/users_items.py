@@ -39,7 +39,7 @@ spark
 spark.conf.set("spark.sql.session.timeZone", "UTC")
 #topic = spark.conf.get("spark.users_items.topic_name")
 #offset = spark.conf.get("spark.users_items.offset")
-outputDir = spark.conf.get("spark.users_items.output_dir_prefix")
+outputDir = spark.conf.get("spark.users_items.output_dir")
 inputDir = spark.conf.get("spark.users_items.input_dir")
 
 update = spark.conf.get("spark.users_items.update", "1")
