@@ -7,7 +7,7 @@
 # spark.stop()
 
 
-# In[1]:
+# In[109]:
 
 
 # import os
@@ -22,7 +22,7 @@
 # sys.path.insert(0, os.path.join(spark_home, 'python/lib/py4j-0.10.7-src.zip'))
 
 
-# In[2]:
+# In[110]:
 
 
 from pyspark.sql import SparkSession
@@ -48,21 +48,21 @@ isUpdate = update if (update == "1") else "0"
 #startingOffset = offset if (offset == "earliest") else '{"'+ topic + '":{"0":' + offset + '}}'
 
 
-# In[3]:
+# In[111]:
 
 
 dfSparkBuy = spark.read.json( inputDir +'/buy')
 #dfSparkBuy = spark.read.json('/user/olga.pogodina/visits/buy')
 
 
-# In[5]:
+# In[112]:
 
 
 dfSparkView = spark.read.json(inputDir + '/view')
 #dfSparkView = spark.read.json('/user/olga.pogodina/visits/view')
 
 
-# In[9]:
+# In[113]:
 
 
 from pyspark.sql.functions import *
@@ -70,54 +70,61 @@ from pyspark.sql.functions import *
 buyMaxTs = dfSparkBuy.select(max("timestamp").alias("max_ts"))
 
 
-# In[12]:
+# In[114]:
 
 
 viewMaxTs = dfSparkView.select(max("timestamp").alias("max_ts"))
 
 
-# In[99]:
+# In[115]:
 
 
 totalMaxTs = buyMaxTs.union(viewMaxTs)                     .select(date_format(from_unixtime(max("max_ts") / 1000), "yyyyMMdd")                     .alias("max_ts")                     .cast('string'))
 
 
-# In[100]:
+# In[116]:
 
 
 maxDateDir = totalMaxTs.collect()[0][0]
 
 
-# In[ ]:
+# In[117]:
 
 
 # log.warn(s"Max date is $maxDateDir")
 
 
-# In[65]:
+# In[118]:
 
 
 dfBuyPrepared = dfSparkBuy.select("uid", "item_id")            .where("uid is not null")            .withColumn("item_id", lower(col("item_id")))            .withColumn('item_id', regexp_replace('item_id', '-', '_'))            .withColumn('item_id', regexp_replace('item_id', ' ', '_'))            .withColumn("item_id", concat(lit("buy_"), col("item_id")).alias("item_id"))            .groupBy("uid", "item_id")            .agg(count("*").alias("item_count"))
 
 
-# In[67]:
+# In[119]:
 
 
 dfViewPrepared = dfSparkView.select("uid", "item_id")            .where("uid is not null")            .withColumn("item_id", lower(col("item_id")))            .withColumn('item_id', regexp_replace('item_id', '-', '_'))            .withColumn('item_id', regexp_replace('item_id', ' ', '_'))            .withColumn("item_id", concat(lit("view_"), col("item_id")).alias("item_id"))            .groupBy("uid", "item_id")            .agg(count("*").alias("item_count"))
 
 
-# In[70]:
+# In[120]:
 
 
 dfTotal = dfBuyPrepared.union(dfViewPrepared)        .groupBy("uid")        .pivot("item_id")        .sum("item_count")        .na.fill(0)
 
 
-# In[ ]:
+# In[122]:
+
+
+dfTotal.show(2)
+
+
+# In[128]:
 
 
 if (isUpdate == 1):
     
     lastLoadDf = spark.read.parquet(outputDir + "/20200429").na.fill(0)
+    #lastLoadDf = spark.read.parquet('/user/olga.pogodina/users-items' + "/20200429").na.fill(0)
     usersPrev = lastLoadDf.select("uid")
     rowsNewOnly = dfTotal.join(lastLoadDf, "uid", "left_anti")
     vnewCols = set(rowsNewOnly.columns)
@@ -130,7 +137,9 @@ if (isUpdate == 1):
     cols = columnsAll(oldCols, oldCols)
     updatedDf = lastLoadDf.select(cols).union(rowsNewOnly.select(cols))
     
-    updatedDf.write.parquet(outputDir + '/' + maxDateDir)
+    updatedDf.write.save(outputDir + '/' + maxDateDir, format='parquet')
+    #updatedDf.write.save('/user/olga.pogodina/users-items' + '/' + maxDateDir, format='parquet')
 else:
-    dfTotal.write.parquet(outputDir + '/' + maxDateDir)
+    dfTotal.write.save(outputDir + '/' + maxDateDir, format='parquet')
+    #dfTotal.write.save('/user/olga.pogodina/users-items' + '/' + maxDateDir, format='parquet')
 
